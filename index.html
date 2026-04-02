@@ -235,40 +235,61 @@
       min-width: 0;
     }
 
-   .result-title {
-  font-size: clamp(34px, 2.4vw, 46px);
-  color: rgba(255,255,255,0.92);
-  font-weight: 800;
-  letter-spacing: 0.3px;
-}
+    .result-title {
+      font-size: clamp(34px, 2.4vw, 46px);
+      color: rgba(255,255,255,0.92);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
 
-.selected-label {
-  font-size: clamp(30px, 2.1vw, 40px);
-  color: rgba(255,255,255,0.90);
-  font-weight: 800;
-}
+    .selected-label {
+      font-size: clamp(30px, 2.1vw, 40px);
+      color: rgba(255,255,255,0.90);
+      font-weight: 800;
+    }
 
-.selected-number {
-  font-size: clamp(64px, 4.4vw, 92px);
-  font-weight: 900;
-  line-height: 1;
-  min-height: 1em;
-  text-shadow: 0 8px 24px rgba(0,0,0,0.14);
-}
+    .selected-number {
+      font-size: clamp(64px, 4.4vw, 92px);
+      font-weight: 900;
+      line-height: 1;
+      min-height: 1em;
+      text-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    }
 
-    .phone-number {
+    .phone-boxes {
       width: 100%;
       max-width: 100%;
-      font-size: clamp(52px, 4.6vw, 88px);
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    .phone-box {
+      width: 64px;
+      height: 78px;
+      border: 2.5px solid rgba(255,255,255,0.95);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
       font-weight: 900;
-      line-height: 1.08;
-      min-height: 1.25em;
-      letter-spacing: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: clip;
+      color: #fff;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 8px 20px rgba(0,0,0,0.14);
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 10px 30px rgba(0,0,0,0.16);
+      text-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    }
+
+    .phone-box.empty {
+      color: rgba(255,255,255,0.42);
+      border-color: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.04);
     }
 
     .controls {
@@ -342,8 +363,10 @@
         min-height: 420px;
       }
 
-      .phone-number {
-        font-size: clamp(44px, 9vw, 72px);
+      .phone-box {
+        width: 58px;
+        height: 72px;
+        font-size: 36px;
       }
     }
   </style>
@@ -370,12 +393,10 @@
     <aside class="right">
       <div class="result-wrap">
         <div class="result-title">Утасны дугаар</div>
-        <div id="phoneNumber" class="phone-number">80------</div>
+        <div id="phoneNumber" class="phone-boxes"></div>
 
         <div class="selected-label">Сонгогдсон тоо</div>
         <div id="selectedNumber" class="selected-number">-</div>
-
-        
       </div>
 
       <div class="controls">
@@ -386,7 +407,7 @@
 
   <div id="liveRegion" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
- <script>
+<script>
   const numbers = [7, 1, 9, 0, 4, 8, 2, 6, 3, 5];
   const sliceAngle = 360 / numbers.length;
 
@@ -538,26 +559,72 @@
     hiddenPrefix = hiddenPrefixes[getSecureRandomInt(hiddenPrefixes.length)];
   }
 
+  function renderPhoneBoxes() {
+    const totalLength = 8;
+    const boxes = new Array(totalLength).fill('-');
+    const prefixDigits = hiddenPrefix.split('');
+
+    boxes[0] = prefixDigits[0] || '-';
+    boxes[1] = prefixDigits[1] || '-';
+
+    selectedDigits.forEach((digit, index) => {
+      const targetIndex = totalLength - 1 - index;
+      if (targetIndex >= 2) {
+        boxes[targetIndex] = digit;
+      }
+    });
+
+    phoneNumber.innerHTML = '';
+
+    boxes.forEach((digit) => {
+      const box = document.createElement('div');
+      box.className = 'phone-box';
+
+      if (digit === '-') {
+        box.textContent = '-';
+        box.classList.add('empty');
+      } else {
+        box.textContent = digit;
+      }
+
+      phoneNumber.appendChild(box);
+    });
+  }
+
   function resetBuild() {
     selectedDigits = [];
     buildComplete = false;
     pickHiddenPrefix();
     selectedNumber.textContent = '-';
-    phoneNumber.textContent = `${hiddenPrefix}------`;
     phoneNumber.dataset.fullNumber = '';
     clearHighlight();
+    renderPhoneBoxes();
     actionBtn.textContent = 'Эргүүлэх';
     actionBtn.classList.remove('restart-btn');
     actionBtn.classList.add('spin-btn');
   }
 
   function getMaskedPhoneDisplay() {
-    const suffix = selectedDigits.join('').padStart(6, '-');
-    return `${hiddenPrefix}${suffix}`;
+    const totalLength = 8;
+    const boxes = new Array(totalLength).fill('-');
+    const prefixDigits = hiddenPrefix.split('');
+
+    boxes[0] = prefixDigits[0] || '-';
+    boxes[1] = prefixDigits[1] || '-';
+
+    selectedDigits.forEach((digit, index) => {
+      const targetIndex = totalLength - 1 - index;
+      if (targetIndex >= 2) {
+        boxes[targetIndex] = digit;
+      }
+    });
+
+    return boxes.join('');
   }
 
   function getFullPhoneNumber() {
-    return `${hiddenPrefix}${selectedDigits.join('')}`;
+    const suffix = [...selectedDigits].reverse().join('');
+    return `${hiddenPrefix}${suffix}`;
   }
 
   function finishBuild() {
@@ -599,9 +666,9 @@
       const actualSliceIndex = getSliceIndexUnderPointer(finalRotation);
       const actualNumber = getNumberUnderPointer(finalRotation);
 
-      selectedDigits.unshift(String(actualNumber));
+      selectedDigits.push(String(actualNumber));
       selectedNumber.textContent = actualNumber;
-      phoneNumber.textContent = getMaskedPhoneDisplay();
+      renderPhoneBoxes();
       showHighlight(actualSliceIndex);
 
       if (selectedDigits.length < 6) {
@@ -613,7 +680,7 @@
 
       actionBtn.disabled = false;
       spinning = false;
-    }, 2200);
+    }, 5900);
   }
 
   actionBtn.addEventListener('click', () => {
